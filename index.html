@@ -12,24 +12,21 @@
     <!-- Tone.js kütüphanesi ses efektleri için -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        /*
-         * Responsive Tasarım ve Görünürlük için CSS Değişiklikleri
-         * --------------------------------------------------------
-         * Bu kod, Flexbox kullanarak sayfa düzenini yeniden yapılandırır.
-         * Kontrol düğmeleri artık zamanlayıcıların altında, ayrı bir bölümde bulunur
-         * ve her zaman görünür olmaları garanti edilir.
-         */
+        /* Genel stil ve değişkenler */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
 
         :root {
             --player1-color: #4CAF50; /* Varsayılan yeşil */
             --player2-color: #424242; /* Varsayılan gri */
+            --danger-color: #f44336; /* Tehlike bölgesi için kırmızı */
             --bg-color: #212121;
             --text-color: #ffffff;
             --button-color: #616161;
             --button-hover-color: #757575;
             --border-radius-main: 15px;
             --border-radius-modal: 15px;
+            --button-size: 60px;
+            --button-gap: 20px;
         }
 
         body {
@@ -37,19 +34,20 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             display: flex;
-            flex-direction: column; /* Sayfa öğelerini dikey olarak hizala */
+            flex-direction: column;
             align-items: center;
-            justify-content: space-between; /* Zamanlayıcılar ve kontroller arasına boşluk koy */
+            justify-content: space-between;
             margin: 0;
             padding: 0;
             height: 100vh;
             user-select: none;
-            box-sizing: border-box; /* Padding ve border'ı genişliğe dahil et */
+            box-sizing: border-box;
+            overflow: hidden; /* Ekranın kaymasını engelle */
         }
 
         /* Ana zamanlayıcı konteyneri için Flexbox düzeni */
         .main-container {
-            flex: 1; /* Kontroller dışındaki tüm alanı kapla */
+            flex: 1;
             width: 100%;
             display: flex;
             flex-direction: row; /* Varsayılan olarak yatay */
@@ -89,6 +87,11 @@
             opacity: 0.7;
         }
 
+        /* Tehlike bölgesi için stil */
+        .player-timer.danger-zone {
+            background-color: var(--danger-color);
+        }
+
         .timer-display {
             font-size: 10vw;
             font-weight: 700;
@@ -97,9 +100,9 @@
             transition: font-size 0.5s ease;
         }
 
-        /* Dikey modda font boyutunu ayarla */
+        /* Dikey modda font boyutunu daha uygun bir vw değeriyle ayarla */
         body.vertical-mode .timer-display {
-            font-size: 20vh;
+            font-size: 30vw;
         }
         
         /* Sağ alt köşe için göz butonu konteyneri */
@@ -122,25 +125,25 @@
         /* Kontrol butonu grubu */
         .control-group {
             display: flex;
-            gap: 20px;
+            gap: var(--button-gap);
             transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
         }
 
         /* Butonlar gizlendiğinde uygulanacak stil */
         .control-group.hidden {
-            transform: translateY(100px); /* Ekrandan aşağı doğru hareket ettirir */
+            transform: translateY(calc(var(--button-size) + var(--button-gap)));
             opacity: 0;
             visibility: hidden;
-            pointer-events: none; /* Gizlendiğinde tıklamaları engeller */
+            pointer-events: none;
         }
         
         .control-button {
             background-color: var(--button-color);
             border: none;
             color: var(--text-color);
-            font-size: 2rem;
-            width: 60px;
-            height: 60px;
+            font-size: calc(var(--button-size) * 0.4);
+            width: var(--button-size);
+            height: var(--button-size);
             border-radius: 50%;
             cursor: pointer;
             transition: background-color 0.3s, transform 0.1s;
@@ -336,6 +339,10 @@
                 <input type="color" id="color2" value="#424242">
             </div>
             <div class="form-group">
+                <label for="dangerColor" data-key="dangerColorLabel">Kritik Süre Rengi</label>
+                <input type="color" id="dangerColor" value="#f44336">
+            </div>
+            <div class="form-group">
                 <button id="installPwaButton" class="modal-button save" style="width: 100%; display: none;" data-key="installPwaButton">Ana Ekrana Ekle</button>
                 <p id="installStatus" style="text-align: center; font-size: 0.9em; margin-top: 10px;"></p>
             </div>
@@ -356,14 +363,15 @@
         const settingsButton = document.getElementById('settingsButton');
         const rotateButton = document.getElementById('rotateButton');
         const resetButton = document.getElementById('resetButton');
-        const toggleControlsButton = document.getElementById('toggleControlsButton'); // Yeni buton
-        const controlGroup = document.getElementById('controlGroup'); // Yeni grup
+        const toggleControlsButton = document.getElementById('toggleControlsButton');
+        const controlGroup = document.getElementById('controlGroup');
         const settingsModal = document.getElementById('settingsModal');
         const initialTimeInput = document.getElementById('initialTime');
         const languageSelect = document.getElementById('languageSelect');
         const orientationSelect = document.getElementById('orientationSelect');
         const color1Input = document.getElementById('color1');
         const color2Input = document.getElementById('color2');
+        const dangerColorInput = document.getElementById('dangerColor');
         const saveSettingsButton = document.getElementById('saveSettings');
         const cancelSettingsButton = document.getElementById('cancelSettings');
         const installPwaButton = document.getElementById('installPwaButton');
@@ -381,6 +389,13 @@
         // PWA kurulumu için değişken
         let deferredPrompt;
 
+        // WakeLock (Ekranı açık tutma) için değişken
+        let wakeLock = null;
+
+        // Kaydırma (swipe) için değişkenler
+        let touchStartX = 0;
+        let touchStartY = 0;
+
         // Dil çevirileri için obje
         const translations = {
             en: {
@@ -393,6 +408,7 @@
                 orientationVertical: 'Vertical',
                 color1Label: 'Player 1 Color',
                 color2Label: 'Player 2 Color',
+                dangerColorLabel: 'Critical Time Color',
                 installPwaButton: 'Add to Home Screen',
                 installStatus: 'Click to add the app to your home screen.',
                 saveButton: 'Save',
@@ -413,6 +429,7 @@
                 orientationVertical: 'Dikey',
                 color1Label: 'Oyuncu 1 Rengi',
                 color2Label: 'Oyuncu 2 Rengi',
+                dangerColorLabel: 'Kritik Süre Rengi',
                 installPwaButton: 'Ana Ekrana Ekle',
                 installStatus: 'Uygulamayı ana ekranınıza eklemek için tıklayın.',
                 saveButton: 'Kaydet',
@@ -433,6 +450,7 @@
                 orientationVertical: 'Vertikal',
                 color1Label: 'Spieler 1 Farbe',
                 color2Label: 'Spieler 2 Farbe',
+                dangerColorLabel: 'Kritische Zeitfarbe',
                 installPwaButton: 'Zum Startbildschirm hinzufügen',
                 installStatus: 'Klicken Sie, um die App zum Startbildschirm hinzuzufügen.',
                 saveButton: 'Speichern',
@@ -453,6 +471,7 @@
                 orientationVertical: 'Vertical',
                 color1Label: 'Color Jugador 1',
                 color2Label: 'Color Jugador 2',
+                dangerColorLabel: 'Color de Tiempo Crítico',
                 installPwaButton: 'Añadir a la pantalla de inicio',
                 installStatus: 'Haz clic para añadir la aplicación a tu pantalla de inicio.',
                 saveButton: 'Guardar',
@@ -473,6 +492,7 @@
                 orientationVertical: 'Vertical',
                 color1Label: 'Couleur Joueur 1',
                 color2Label: 'Couleur Joueur 2',
+                dangerColorLabel: 'Couleur Temps Critique',
                 installPwaButton: 'Ajouter à l\'écran d\'accueil',
                 installStatus: 'Cliquez pour ajouter l\'application à votre écran d\'accueil.',
                 saveButton: 'Sauvegarder',
@@ -493,6 +513,7 @@
                 orientationVertical: 'Verticale',
                 color1Label: 'Colore Giocatore 1',
                 color2Label: 'Colore Giocatore 2',
+                dangerColorLabel: 'Colore Tempo Critico',
                 installPwaButton: 'Aggiungi alla schermata iniziale',
                 installStatus: 'Clicca per aggiungere l\'app alla tua schermata iniziale.',
                 saveButton: 'Salva',
@@ -513,6 +534,7 @@
                 orientationVertical: 'Вертикальная',
                 color1Label: 'Цвет игрока 1',
                 color2Label: 'Цвет игрока 2',
+                dangerColorLabel: 'Цвет критического времени',
                 installPwaButton: 'Добавить на главный экран',
                 installStatus: 'Нажмите, чтобы добавить приложение на главный экран.',
                 saveButton: 'Сохранить',
@@ -533,6 +555,7 @@
                 orientationVertical: '縦',
                 color1Label: 'プレイヤー1の色',
                 color2Label: 'プレイヤー2の色',
+                dangerColorLabel: '緊急時の色',
                 installPwaButton: 'ホーム画面に追加',
                 installStatus: 'アプリをホーム画面に追加するには、ここをクリックしてください。',
                 saveButton: '保存',
@@ -553,6 +576,7 @@
                 orientationVertical: '세로',
                 color1Label: '플레이어 1 색상',
                 color2Label: '플레이어 2 색상',
+                dangerColorLabel: '위험 시간 색상',
                 installPwaButton: '홈 화면에 추가',
                 installStatus: '앱을 홈 화면에 추가하려면 클릭하세요.',
                 saveButton: '저장',
@@ -573,6 +597,7 @@
                 orientationVertical: '纵向',
                 color1Label: '玩家1颜色',
                 color2Label: '玩家2颜色',
+                dangerColorLabel: '危险时间颜色',
                 installPwaButton: '添加到主屏幕',
                 installStatus: '点击将应用添加到您的主屏幕。',
                 saveButton: '保存',
@@ -593,6 +618,7 @@
                 orientationVertical: 'عمودي',
                 color1Label: 'لون اللاعب 1',
                 color2Label: 'لون اللاعب 2',
+                dangerColorLabel: 'لون الوقت الحرج',
                 installPwaButton: 'إضافة إلى الشاشة الرئيسية',
                 installStatus: 'انقر لإضافة التطبيق إلى شاشتك الرئيسية.',
                 saveButton: 'حفظ',
@@ -706,6 +732,12 @@
                 player2Container.classList.remove('paused');
             } else {
                 clearInterval(activeTimer);
+                // Bir önceki oyuncunun timer'ından tehlike sınıfını kaldır
+                if (currentPlayer === 1) {
+                    player1Container.classList.remove('danger-zone');
+                } else {
+                    player2Container.classList.remove('danger-zone');
+                }
                 currentPlayer = currentPlayer === 1 ? 2 : 1;
             }
 
@@ -720,8 +752,9 @@
             activeTimer = setInterval(() => {
                 if (currentPlayer === 1) {
                     timer1--;
-                    if (timer1 === 10) {
-                        playLowTimeSound(); // 10 saniyeye gelince ses çal
+                    if (timer1 <= 10) {
+                        if (timer1 > 0) playLowTimeSound(); // 10 saniyeye gelince ses çal
+                        player1Container.classList.add('danger-zone'); // Tehlike sınıfını ekle
                     }
                     if (timer1 <= 0) {
                         clearInterval(activeTimer);
@@ -732,8 +765,9 @@
                     }
                 } else {
                     timer2--;
-                    if (timer2 === 10) {
-                        playLowTimeSound(); // 10 saniyeye gelince ses çal
+                    if (timer2 <= 10) {
+                        if (timer2 > 0) playLowTimeSound(); // 10 saniyeye gelince ses çal
+                        player2Container.classList.add('danger-zone'); // Tehlike sınıfını ekle
                     }
                     if (timer2 <= 0) {
                         clearInterval(activeTimer);
@@ -765,6 +799,9 @@
             updateTimers();
             player1Container.classList.add('active');
             player2Container.classList.remove('active');
+            // Sıfırlama sırasında tehlike sınıfını kaldır
+            player1Container.classList.remove('danger-zone');
+            player2Container.classList.remove('danger-zone');
             currentPlayer = 1;
         }
         
@@ -803,6 +840,7 @@
             document.querySelector('[data-key="orientationVertical"]').textContent = langData.orientationVertical;
             document.querySelector('[data-key="color1Label"]').textContent = langData.color1Label;
             document.querySelector('[data-key="color2Label"]').textContent = langData.color2Label;
+            document.querySelector('[data-key="dangerColorLabel"]').textContent = langData.dangerColorLabel;
             document.querySelector('[data-key="installPwaButton"]').textContent = langData.installPwaButton;
             document.querySelector('[data-key="saveButton"]').textContent = langData.saveButton;
             document.querySelector('[data-key="closeButton"]').textContent = langData.closeButton;
@@ -839,6 +877,7 @@
                 orientationSelect.value = body.classList.contains('vertical-mode') ? 'vertical' : 'horizontal';
                 color1Input.value = getComputedStyle(document.documentElement).getPropertyValue('--player1-color').trim();
                 color2Input.value = getComputedStyle(document.documentElement).getPropertyValue('--player2-color').trim();
+                dangerColorInput.value = getComputedStyle(document.documentElement).getPropertyValue('--danger-color').trim();
                 languageSelect.value = currentLang;
                 settingsModal.classList.add('show');
             } else {
@@ -851,6 +890,14 @@
         rotateButton.addEventListener('click', toggleOrientation);
         resetButton.addEventListener('click', resetTimer);
 
+        // Dokunmatik olaylar (swipe ve click için)
+        player1Container.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].clientX;
+            touchStartY = e.changedTouches[0].clientY;
+        });
+        player1Container.addEventListener('touchend', (e) => {
+            handleTouchEnd(e, 1);
+        });
         player1Container.addEventListener('click', () => {
             if ((isPaused && currentPlayer === 1) || (!isPaused && currentPlayer === 1)) {
                 togglePlayer();
@@ -858,12 +905,41 @@
             }
         });
 
+        player2Container.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].clientX;
+            touchStartY = e.changedTouches[0].clientY;
+        });
+        player2Container.addEventListener('touchend', (e) => {
+            handleTouchEnd(e, 2);
+        });
         player2Container.addEventListener('click', () => {
             if (!isPaused && currentPlayer === 2) {
                 togglePlayer();
                 playSound();
             }
         });
+
+        function handleTouchEnd(e, playerNum) {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const swipeThreshold = 50; // Kaydırma için minimum mesafe
+
+            // Yatay modda yatay kaydırma, dikey modda dikey kaydırma kontrolü
+            const isHorizontal = !body.classList.contains('vertical-mode');
+            const isSwipe = isHorizontal ? Math.abs(deltaX) > swipeThreshold && Math.abs(deltaY) < Math.abs(deltaX) : Math.abs(deltaY) > swipeThreshold && Math.abs(deltaX) < Math.abs(deltaY);
+            
+            if (isSwipe && ((isPaused && currentPlayer === playerNum) || (!isPaused && currentPlayer === playerNum))) {
+                togglePlayer();
+                playSound();
+            } else if (!isSwipe && ((isPaused && currentPlayer === playerNum) || (!isPaused && currentPlayer === playerNum))) {
+                // Eğer swipe yoksa normal tıklama işlemini yap
+                togglePlayer();
+                playSound();
+            }
+        }
+
 
         // Kontrol düğmelerini gizleme/gösterme
         toggleControlsButton.addEventListener('click', () => {
@@ -894,6 +970,7 @@
 
             document.documentElement.style.setProperty('--player1-color', color1Input.value);
             document.documentElement.style.setProperty('--player2-color', color2Input.value);
+            document.documentElement.style.setProperty('--danger-color', dangerColorInput.value);
             
             updateLanguage(languageSelect.value);
 
@@ -904,15 +981,43 @@
             toggleSettingsModal(false);
         });
         
+        // Ekranı uyanık tutmak için wake lock isteği
+        const requestWakeLock = async () => {
+            try {
+                // Sadece desteklenen tarayıcılarda çalışır
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock başarıyla istendi.');
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Wake Lock serbest bırakıldı.');
+                    });
+                } else {
+                    console.log('Wake Lock API desteklenmiyor.');
+                }
+            } catch (err) {
+                console.error(`Hata oluştu: ${err.name}, ${err.message}`);
+            }
+        };
+
+        // Sayfa görünür olduğunda wake lock'u tekrar al
+        document.addEventListener('visibilitychange', () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                requestWakeLock();
+            }
+        });
+
         window.onload = function() {
-            applyOrientation('horizontal');
+            // Uygulama başladığında dikey modu varsayılan olarak uygula
+            applyOrientation('vertical');
             updateTimers();
 
-            // Tarayıcı dilini al ve ilk iki harfini kullan
+            // Tarayıcı dilini al ve desteklenen bir dil yoksa varsayılan olarak Türkçe kullan
             const browserLang = navigator.language.substring(0, 2);
-            // Desteklenen dillerde olup olmadığını kontrol et, yoksa varsayılan olarak Türkçe kullan
             const defaultLang = translations[browserLang] ? browserLang : 'tr';
             updateLanguage(defaultLang);
+            
+            // Ekran kapanmaması için wake lock isteği gönder
+            requestWakeLock();
         };
 
         // PWA desteği için
@@ -928,14 +1033,14 @@
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
                 if (outcome === 'accepted') {
-                    installStatus.textContent = 'Uygulama başarıyla eklendi!'; // Bu kısım da çevrilebilir
+                    installStatus.textContent = 'Uygulama başarıyla eklendi!';
                 } else {
-                    installStatus.textContent = 'Uygulama ekleme işlemi iptal edildi.'; // Bu kısım da çevrilebilir
+                    installStatus.textContent = 'Uygulama ekleme işlemi iptal edildi.';
                 }
                 deferredPrompt = null;
                 installPwaButton.style.display = 'none';
             } else {
-                installStatus.textContent = 'Tarayıcınız bu özelliği desteklemiyor veya uygulama zaten yüklü.'; // Bu kısım da çevrilebilir
+                installStatus.textContent = 'Tarayıcınız bu özelliği desteklemiyor veya uygulama zaten yüklü.';
             }
         });
         
