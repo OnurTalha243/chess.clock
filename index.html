@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satranç Saati</title>
+    <!-- Sekme ikonunu (favicon) ekleme -->
+    <link rel="icon" href="Adsız tasarım (1).png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
+    <!-- Tone.js kütüphanesi ses efektleri için -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+        :root {
+            --player1-color: #4CAF50; /* Varsayılan yeşil */
+            --player2-color: #424242; /* Varsayılan gri */
+            --bg-color: #212121;
+            --text-color: #ffffff;
+            --button-color: #616161;
+            --button-hover-color: #757575;
+            --border-radius-main: 15px;
+            --border-radius-modal: 15px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            position: relative;
+        }
+/* Bu kural, diğer tüm stillerden sonra geldiği için yüksek önceliğe sahiptir. */
+body.vertical-mode .player-timer {
+    width: 100vw !important;
+    height: 50vh !important;
+    border-radius: 0 !important;
+}
+
+body.vertical-mode .container {
+    width: 100vw !important;
+    height: 100vh !important;
+}
+
+/* Bu kural body'nin boşluklarını temizler */
+body {
+    margin: 0;
+    padding: 0;
+}body.vertical-mode .timer-display {
+    font-size: 20vh ; 
+    
+}
+/* Dikey modda font boyutunu zorunlu olarak küçültür */
+body.vertical-mode .timer-display {
+    font-size: 15vw !important;
+}
+        /* Dikey modda gövdeyi döndürme */
+        body.vertical-mode .container {
+flex-direction: column-reverse; /* Oyuncu 2'yi üste, Oyuncu 1'i alta al */
+        }
+        
+        body.vertical-mode #player2 {
+            transform: rotate(180deg);
+        }
+
+        .container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            gap: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: flex-direction 0.5s ease;
+        }
+
+        /* Yatay mod için varsayılan stil */
+        .container:not(.vertical-mode) {
+            flex-direction: row;
+        }
+
+        .player-timer {
+            flex: 1; /* Esnek kutu elemanlarının eşit alana yayılmasını sağlar */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, transform 0.5s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+        }
+
+        /* Yatay mod için timer boyutları ve kenar yuvarlama */
+        .container:not(.vertical-mode) .player-timer {
+            height: 100%;
+            width: 50%;
+            border-radius: var(--border-radius-main);
+        }
+
+        /* Dikey mod için timer boyutları ve kenar yuvarlama ayarı */
+        body.vertical-mode .player-timer {
+            width: 100%;
+            height: 50vh; /* Ekran yüksekliğinin tam yarısı */
+            border-radius: 0;
+        }
+
+        .player1 { background-color: var(--player1-color); }
+        .player2 { background-color: var(--player2-color); }
+
+        .player-timer.active {
+            transform: scale(1.02);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        .player-timer.paused {
+            opacity: 0.7;
+        }
+
+        .timer-display {
+            font-size: 10vw; /* Ekran genişliğine göre boyut */
+            font-weight: 700;
+            color: var(--text-color);
+            margin: 0;
+            transition: font-size 0.5s ease;
+        }
+
+        /* Dikey modda font boyutunu ayarla */
+        body.vertical-mode .timer-display {
+            font-size: 20vh; /* Ekran yüksekliğine göre boyut, küçülmeyi engeller */
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px; /* Düğmeler arasındaki boşluk ayarlandı */
+        }
+
+        .control-button {
+            background-color: var(--button-color);
+            border: none;
+            color: var(--text-color);
+            font-size: 2rem; /* Font boyutu biraz küçültüldü */
+            width: 60px; /* Düğme boyutu biraz küçültüldü */
+            height: 60px; /* Düğme boyutu biraz küçültüldü */
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .control-button:hover { background-color: var(--button-hover-color); }
+        .control-button:active { transform: scale(0.95); }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0.3s, opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .settings-modal {
+            background-color: #333;
+            padding: 20px;
+            border-radius: var(--border-radius-modal);
+            width: 90%;
+            max-width: 320px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .settings-modal h2 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .settings-modal .form-group {
+            margin-bottom: 15px;
+        }
+
+        .settings-modal label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .settings-modal input[type="number"],
+        .settings-modal input[type="color"],
+        .settings-modal select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #555;
+            background-color: #444;
+            color: var(--text-color);
+            appearance: none;
+        }
+        
+        .settings-modal select {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" class="bi bi-caret-down-fill" viewBox="0 0 16 16"><path d="M7.247 11.14L2.451 5.617a.5.5 0 0 1 .386-.872h9.61a.5.5 0 0 1 .386.872l-4.796 5.523a.5.5 0 0 1-.772 0z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+            cursor: pointer;
+        }
+
+        .settings-modal input[type="color"] {
+            height: 45px;
+            padding: 10;
+            cursor: pointer;
+        }
+        
+        .settings-modal .button-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .settings-modal .modal-button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .settings-modal .modal-button.save {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .settings-modal .modal-button.save:hover { background-color: #45a049; }
+
+        .settings-modal .modal-button.close {
+            background-color: #f44336;
+            color: white;
+        }
+        .settings-modal .modal-button.close:hover { background-color: #da190b; }
+
+        /* Font Awesome ikonları için */
+        .fas { font-family: "Font Awesome 5 Free"; font-weight: 900; }
+        .fa-play::before { content: "\f04b"; }
+        .fa-pause::before { content: "\f04c"; }
+        .fa-redo-alt::before { content: "\f2f9"; }
+        .fa-cog::before { content: "\f013"; }
+        .fa-stop::before { content: "\f04d"; }
+        .fa-sync-alt::before { content: "\f2f1"; } /* Döndürme ikonu */
+    </style>
+</head>
+<body>
+
+    <!-- Ana saat ekranı -->
+    <div class="container" id="mainContainer">
+        <!-- Oyuncu 1 Ekranı -->
+        <div id="player1" class="player-timer player1 paused active">
+            <h1 id="timer1" class="timer-display">10:00</h1>
+        </div>
+        <!-- Oyuncu 2 Ekranı -->
+        <div id="player2" class="player-timer player2 paused">
+            <h1 id="timer2" class="timer-display">10:00</h1>
+        </div>
+    </div>
+
+    <!-- Kontrol düğmeleri -->
+    <div class="controls">
+        <button id="settingsButton" class="control-button">
+            <i class="fas fa-cog"></i>
+        </button>
+        <!-- Ekran döndürme butonu -->
+        <button id="rotateButton" class="control-button">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+        <!-- Yeni sıfırlama butonu -->
+        <button id="resetButton" class="control-button">
+            <i class="fas fa-redo-alt"></i>
+        </button>
+    </div>
+
+    <!-- Ayarlar modalı -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="settings-modal">
+            <h2>Ayarlar</h2>
+            <div class="form-group">
+                <label for="initialTime">Başlangıç Süresi (dakika)</label>
+                <input type="number" id="initialTime" value="10" min="1">
+            </div>
+            <div class="form-group">
+                <label for="orientationSelect">Yönlendirme</label>
+                <select id="orientationSelect">
+                    <option value="horizontal">Yatay</option>
+                    <option value="vertical">Dikey</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="color1">Oyuncu 1 Rengi</label>
+                <input type="color" id="color1" value="#4CAF50">
+            </div>
+            <div class="form-group">
+                <label for="color2">Oyuncu 2 Rengi</label>
+                <input type="color" id="color2" value="#424242">
+            </div>
+            <!-- PWA yükleme butonu için form grubu -->
+            <div class="form-group">
+                <button id="installPwaButton" class="modal-button save" style="width: 100%; display: none;">Ana Ekrana Ekle</button>
+                <p id="installStatus" style="text-align: center; font-size: 0.9em; margin-top: 10px;"></p>
+            </div>
+            <div class="button-group">
+                <button id="saveSettings" class="modal-button save">Kaydet</button>
+                <button id="cancelSettings" class="modal-button close">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Font Awesome ikonları için
+        const fontAwesomeScript = document.createElement('script');
+        fontAwesomeScript.src = 'https://kit.fontawesome.com/a076d05399.js';
+        fontAwesomeScript.crossOrigin = 'anonymous';
+        document.head.appendChild(fontAwesomeScript);
+        
+        // Gerekli DOM elemanlarını seçme
+        const player1TimerEl = document.getElementById('timer1');
+        const player2TimerEl = document.getElementById('timer2');
+        const player1Container = document.getElementById('player1');
+        const player2Container = document.getElementById('player2');
+        const mainContainer = document.getElementById('mainContainer');
+        const settingsButton = document.getElementById('settingsButton');
+        const rotateButton = document.getElementById('rotateButton');
+        const resetButton = document.getElementById('resetButton'); // Yeni sıfırlama butonu
+        const settingsModal = document.getElementById('settingsModal');
+        const initialTimeInput = document.getElementById('initialTime');
+        const orientationSelect = document.getElementById('orientationSelect');
+        const color1Input = document.getElementById('color1');
+        const color2Input = document.getElementById('color2');
+        const saveSettingsButton = document.getElementById('saveSettings');
+        const cancelSettingsButton = document.getElementById('cancelSettings');
+        const installPwaButton = document.getElementById('installPwaButton');
+        const installStatus = document.getElementById('installStatus');
+        const body = document.body;
+
+        // Oyun durumu ve zamanlayıcı değişkenleri
+        let initialTime = 600; // Saniye cinsinden (10 dakika)
+        let timer1 = initialTime;
+        let timer2 = initialTime;
+        let activeTimer;
+        let isPaused = true;
+        let currentPlayer = 1;
+
+        // PWA kurulumu için değişken
+        let deferredPrompt;
+
+        // Ses efektleri için Tone.js ayarları
+        // Kulağa daha hoş gelen, basit ve temiz bir "tık" sesi için Synth kullanıldı.
+        const synth = new Tone.Synth({
+            oscillator: { type: "triangle" },
+            envelope: {
+                attack: 0.005,
+                decay: 0.1,
+                sustain: 0.01,
+                release: 0.1
+            }
+        }).toDestination();
+
+        // Ses çalma fonksiyonu
+const woodSynth = new Tone.MembraneSynth({
+    pitchDecay: 0.05, // Sesin hızla alçalmasını sağlar
+    octaves: 2,       // Daha geniş bir oktav aralığı
+    oscillator: {
+        type: 'sine'  // Temiz bir sinüs dalgası kullanarak sesin yumuşak olmasını sağlar
+    },
+    envelope: {
+        attack: 0.001, // Çok kısa başlangıç
+        decay: 0.4,    // Hızlı sönümleme
+        sustain: 0.01, // Tutma süresi neredeyse sıfır
+        release: 0.2   // Hızlı bitiş
+    }
+}).toDestination();
+
+// Ses çalma fonksiyonu
+function playSound() {
+    woodSynth.triggerAttackRelease("C2", "8n");
+}
+
+        // Zamanı MM:SS formatına dönüştürme fonksiyonu
+        function formatTime(seconds) {
+            if (seconds < 0) seconds = 0;
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        // Zamanlayıcıları güncelleme
+        function updateTimers() {
+            player1TimerEl.textContent = formatTime(timer1);
+            player2TimerEl.textContent = formatTime(timer2);
+        }
+
+        // Oyuncu değiştirme ve zamanlayıcıyı başlatma/durdurma
+        function togglePlayer() {
+            if (isPaused) {
+                isPaused = false;
+                player1Container.classList.remove('paused');
+                player2Container.classList.remove('paused');
+            } else {
+                clearInterval(activeTimer);
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+            }
+
+            if (currentPlayer === 1) {
+                player1Container.classList.add('active');
+                player2Container.classList.remove('active');
+            } else {
+                player1Container.classList.remove('active');
+                player2Container.classList.add('active');
+            }
+            
+            activeTimer = setInterval(() => {
+                if (currentPlayer === 1) {
+                    timer1--;
+                    if (timer1 <= 0) {
+                        clearInterval(activeTimer);
+                        timer1 = 0;
+                        player1Container.classList.remove('active');
+                        pauseTimer();
+                    }
+                } else {
+                    timer2--;
+                    if (timer2 <= 0) {
+                        clearInterval(activeTimer);
+                        timer2 = 0;
+                        player2Container.classList.remove('active');
+                        pauseTimer();
+                    }
+                }
+                updateTimers();
+            }, 1000);
+        }
+
+        // Zamanlayıcıyı duraklatma
+        function pauseTimer() {
+            if (isPaused) return;
+
+            isPaused = true;
+            clearInterval(activeTimer);
+            player1Container.classList.add('paused');
+            player2Container.classList.add('paused');
+        }
+
+        // Zamanlayıcıyı sıfırlama
+        function resetTimer() {
+            pauseTimer();
+            timer1 = initialTime;
+            timer2 = initialTime;
+            updateTimers();
+            player1Container.classList.add('active');
+            player2Container.classList.remove('active');
+            currentPlayer = 1;
+        }
+        
+        // Yönlendirme ayarını uygulama
+        function applyOrientation(orientation) {
+            if (orientation === 'vertical') {
+                body.classList.add('vertical-mode');
+            } else {
+                body.classList.remove('vertical-mode');
+            }
+        }
+
+        // Ekran yönünü değiştirme
+        function toggleOrientation() {
+            const currentOrientation = body.classList.contains('vertical-mode') ? 'vertical' : 'horizontal';
+            const newOrientation = currentOrientation === 'vertical' ? 'horizontal' : 'vertical';
+            applyOrientation(newOrientation);
+            orientationSelect.value = newOrientation;
+        }
+
+        // Ayarlar modalını açma/kapama
+        function toggleSettingsModal(show) {
+            if (show) {
+                initialTimeInput.value = initialTime / 60;
+                orientationSelect.value = body.classList.contains('vertical-mode') ? 'vertical' : 'horizontal';
+                color1Input.value = getComputedStyle(document.documentElement).getPropertyValue('--player1-color').trim();
+                color2Input.value = getComputedStyle(document.documentElement).getPropertyValue('--player2-color').trim();
+                settingsModal.classList.add('show');
+            } else {
+                settingsModal.classList.remove('show');
+            }
+        }
+        
+        // Olay dinleyicileri
+        settingsButton.addEventListener('click', () => toggleSettingsModal(true));
+        rotateButton.addEventListener('click', toggleOrientation);
+        resetButton.addEventListener('click', resetTimer); // Yeni sıfırlama butonu için olay dinleyici
+
+        player1Container.addEventListener('click', () => {
+            if ((isPaused && currentPlayer === 1) || (!isPaused && currentPlayer === 1)) {
+                togglePlayer();
+                playSound();
+            }
+        });
+
+        player2Container.addEventListener('click', () => {
+            if (!isPaused && currentPlayer === 2) {
+                togglePlayer();
+                playSound();
+            }
+        });
+
+        saveSettingsButton.addEventListener('click', () => {
+            const newTime = parseInt(initialTimeInput.value);
+            if (newTime > 0) {
+                initialTime = newTime * 60;
+                resetTimer();
+            }
+
+            const selectedOrientation = orientationSelect.value;
+            applyOrientation(selectedOrientation);
+
+            document.documentElement.style.setProperty('--player1-color', color1Input.value);
+            document.documentElement.style.setProperty('--player2-color', color2Input.value);
+
+            toggleSettingsModal(false);
+        });
+
+        cancelSettingsButton.addEventListener('click', () => {
+            toggleSettingsModal(false);
+        });
+        
+        window.onload = function() {
+            applyOrientation('horizontal');
+            updateTimers();
+        };
+
+        // PWA desteği için
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // PWA kurulum butonu ve durum mesajını göster
+            installPwaButton.style.display = 'block';
+            installStatus.textContent = 'Uygulamayı ana ekranınıza eklemek için tıklayın.';
+        });
+
+        installPwaButton.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installStatus.textContent = 'Uygulama başarıyla eklendi!';
+                } else {
+                    installStatus.textContent = 'Uygulama ekleme işlemi iptal edildi.';
+                }
+                deferredPrompt = null;
+                installPwaButton.style.display = 'none';
+            } else {
+                installStatus.textContent = 'Tarayıcınız bu özelliği desteklemiyor veya uygulama zaten yüklü.';
+            }
+        });
+        
+        // PWA manifestini dinamik olarak oluştur
+        const manifest = {
+            name: "Satranç Saati",
+            short_name: "Satranç Saati",
+            description: "Mobil cihazlar için basit ve kullanışlı satranç saati.",
+            start_url: "/",
+            display: "standalone",
+            background_color: "#212121",
+            theme_color: "#212121",
+            icons: [
+                {
+                    src: "Adsız tasarım (1).png",
+                    sizes: "192x192",
+                    type: "image/png"
+                },
+                {
+                    src: "Adsız tasarım (1).png",
+                    sizes: "512x512",
+                    type: "image/png"
+                }
+            ]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/manifest+json'});
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestUrl;
+        document.head.appendChild(link);
+
+    </script>
+</body>
+</html>
