@@ -47,7 +47,8 @@
             user-select: none;
             box-sizing: border-box; /* Padding ve border'ı genişliğe dahil et */
             /* Kontrol düğmelerinin sabitlenmesi için altta boşluk bırak */
-            padding-bottom: var(--control-height); 
+            padding-bottom: var(--control-height);
+            transition: padding-bottom 0.3s ease; /* Padding animasyonu için geçiş */
         }
 
         /* Ana zamanlayıcı konteyneri için Flexbox düzeni */
@@ -72,7 +73,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.3s ease, box-shadow 0.3s ease; /* Transform yerine box-shadow animasyonu ekledim */
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
             cursor: pointer;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             -webkit-tap-highlight-color: transparent;
@@ -124,7 +125,6 @@
         }
 
         /* Kontrol düğmeleri için yeni konumlandırma */
-        /* Butonların mobil cihazlarda her zaman görünmesini sağlamak için "fixed" konumlandırma */
         .controls {
             position: fixed;
             bottom: 0;
@@ -141,7 +141,39 @@
             box-shadow: 0 -2px 10px rgba(0,0,0,0.2); /* Üste gölge ekle */
             box-sizing: border-box;
             height: var(--control-height);
+            transition: transform 0.3s ease; /* Animasyon için geçiş */
         }
+
+        /* Kontrol panelini gizlemek için yeni sınıf */
+        .controls.hidden {
+            transform: translateY(100%);
+        }
+
+        /* Kontrol düğmelerini gizleme-gösterme düğmesi için yeni stil */
+        .toggle-button {
+            position: fixed;
+            bottom: 20px; /* Kontrol paneli ile aynı hizada, alttan boşluk */
+            right: 20px; /* Sağ alt köşeye konumlandırma */
+            z-index: 20;
+            background-color: var(--button-color);
+            border: none;
+            color: var(--text-color);
+            font-size: 1.5rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Kontrol düğmelerini gizle/göster butonu için hover */
+        .toggle-button:hover { background-color: var(--button-hover-color); }
+        .toggle-button:active { transform: scale(0.95); }
 
         .control-button {
             background-color: var(--button-color);
@@ -282,7 +314,7 @@
     </div>
 
     <!-- Kontrol düğmeleri -->
-    <div class="controls">
+    <div class="controls" id="controls">
         <button id="settingsButton" class="control-button" aria-label="Ayarlar">
             <i class="fas fa-cog"></i>
         </button>
@@ -293,6 +325,11 @@
             <i class="fas fa-redo-alt"></i>
         </button>
     </div>
+
+    <!-- Kontrol düğmelerini gizle/göster butonu -->
+    <button id="toggleControlsButton" class="toggle-button" aria-label="Kontrolleri Gizle/Göster">
+        <i class="fas fa-eye-slash"></i>
+    </button>
 
     <!-- Ayarlar modalı -->
     <div id="settingsModal" class="modal-overlay">
@@ -334,10 +371,11 @@
         const player2TimerEl = document.getElementById('timer2');
         const player1Container = document.getElementById('player1');
         const player2Container = document.getElementById('player2');
-        const mainContainer = document.getElementById('mainContainer');
+        const controls = document.getElementById('controls');
         const settingsButton = document.getElementById('settingsButton');
         const rotateButton = document.getElementById('rotateButton');
         const resetButton = document.getElementById('resetButton');
+        const toggleControlsButton = document.getElementById('toggleControlsButton');
         const settingsModal = document.getElementById('settingsModal');
         const initialTimeInput = document.getElementById('initialTime');
         const orientationSelect = document.getElementById('orientationSelect');
@@ -359,6 +397,7 @@
 
         // PWA kurulumu için değişken
         let deferredPrompt;
+        let controlsHidden = false;
 
         // Ses efektleri için Tone.js ayarları
         const woodSynth = new Tone.MembraneSynth({
@@ -484,10 +523,21 @@
             }
         }
         
+        // Kontrol düğmelerini gizleme/gösterme
+        function toggleControls() {
+            controlsHidden = !controlsHidden;
+            controls.classList.toggle('hidden', controlsHidden);
+            body.style.paddingBottom = controlsHidden ? '0' : 'var(--control-height)';
+            const icon = toggleControlsButton.querySelector('i');
+            icon.classList.toggle('fa-eye', controlsHidden);
+            icon.classList.toggle('fa-eye-slash', !controlsHidden);
+        }
+
         // Olay dinleyicileri
         settingsButton.addEventListener('click', () => toggleSettingsModal(true));
         rotateButton.addEventListener('click', toggleOrientation);
         resetButton.addEventListener('click', resetTimer);
+        toggleControlsButton.addEventListener('click', toggleControls);
 
         player1Container.addEventListener('click', () => {
             if ((isPaused && currentPlayer === 1) || (!isPaused && currentPlayer === 1)) {
