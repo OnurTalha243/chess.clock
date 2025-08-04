@@ -574,7 +574,10 @@
         });
         
         window.onload = function() {
-            applyOrientation('horizontal');
+            // Başlangıçta dikey modda başlat
+            applyOrientation('vertical');
+            // Ayarlar modalındaki seçeneği de dikey olarak ayarla
+            orientationSelect.value = 'vertical';
             updateTimers();
         };
 
