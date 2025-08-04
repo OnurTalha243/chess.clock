@@ -5,11 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Satranç Saati</title>
     <!-- Sekme ikonunu (favicon) ekleme -->
+    <!-- Not: 'Adsız tasarım (1).png' dosyası burada olmadığı için, bu satır sadece referans amaçlıdır. -->
     <link rel="icon" href="Adsız tasarım (1).png" type="image/png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
+    <!-- Font Awesome ikonları için -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <!-- Tone.js kütüphanesi ses efektleri için -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
+        /*
+         * Responsive Tasarım ve Görünürlük için CSS Değişiklikleri
+         * --------------------------------------------------------
+         * Bu kod, Flexbox kullanarak sayfa düzenini yeniden yapılandırır.
+         * Kontrol düğmeleri artık zamanlayıcıların altında, ayrı bir bölümde bulunur
+         * ve her zaman görünür olmaları garanti edilir.
+         */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
 
         :root {
@@ -28,66 +37,35 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             display: flex;
-            flex-direction: column;
+            flex-direction: column; /* Sayfa öğelerini dikey olarak hizala */
             align-items: center;
-            justify-content: center;
+            justify-content: space-between; /* Zamanlayıcılar ve kontroller arasına boşluk koy */
             margin: 0;
             padding: 0;
             height: 100vh;
-            overflow: hidden;
             user-select: none;
-            position: relative;
+            box-sizing: border-box; /* Padding ve border'ı genişliğe dahil et */
         }
-/* Bu kural, diğer tüm stillerden sonra geldiği için yüksek önceliğe sahiptir. */
-body.vertical-mode .player-timer {
-    width: 100vw !important;
-    height: 50vh !important;
-    border-radius: 0 !important;
-}
 
-body.vertical-mode .container {
-    width: 100vw !important;
-    height: 100vh !important;
-}
-
-/* Bu kural body'nin boşluklarını temizler */
-body {
-    margin: 0;
-    padding: 0;
-}body.vertical-mode .timer-display {
-    font-size: 20vh ; 
-    
-}
-/* Dikey modda font boyutunu zorunlu olarak küçültür */
-body.vertical-mode .timer-display {
-    font-size: 15vw !important;
-}
-        /* Dikey modda gövdeyi döndürme */
-        body.vertical-mode .container {
-flex-direction: column-reverse; /* Oyuncu 2'yi üste, Oyuncu 1'i alta al */
+        /* Ana zamanlayıcı konteyneri için Flexbox düzeni */
+        .main-container {
+            flex: 1; /* Kontroller dışındaki tüm alanı kapla */
+            width: 100%;
+            display: flex;
+            flex-direction: row; /* Varsayılan olarak yatay */
         }
-        
+
+        /* Dikey modda zamanlayıcıları ters çevir */
+        body.vertical-mode .main-container {
+            flex-direction: column-reverse;
+        }
+
         body.vertical-mode #player2 {
             transform: rotate(180deg);
         }
 
-        .container {
-            display: flex;
-            width: 100vw;
-            height: 100vh;
-            gap: 0;
-            padding: 0;
-            box-sizing: border-box;
-            transition: flex-direction 0.5s ease;
-        }
-
-        /* Yatay mod için varsayılan stil */
-        .container:not(.vertical-mode) {
-            flex-direction: row;
-        }
-
         .player-timer {
-            flex: 1; /* Esnek kutu elemanlarının eşit alana yayılmasını sağlar */
+            flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -96,20 +74,7 @@ flex-direction: column-reverse; /* Oyuncu 2'yi üste, Oyuncu 1'i alta al */
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             -webkit-tap-highlight-color: transparent;
             margin: 0;
-        }
-
-        /* Yatay mod için timer boyutları ve kenar yuvarlama */
-        .container:not(.vertical-mode) .player-timer {
-            height: 100%;
-            width: 50%;
             border-radius: var(--border-radius-main);
-        }
-
-        /* Dikey mod için timer boyutları ve kenar yuvarlama ayarı */
-        body.vertical-mode .player-timer {
-            width: 100%;
-            height: 50vh; /* Ekran yüksekliğinin tam yarısı */
-            border-radius: 0;
         }
 
         .player1 { background-color: var(--player1-color); }
@@ -125,7 +90,7 @@ flex-direction: column-reverse; /* Oyuncu 2'yi üste, Oyuncu 1'i alta al */
         }
 
         .timer-display {
-            font-size: 10vw; /* Ekran genişliğine göre boyut */
+            font-size: 10vw;
             font-weight: 700;
             color: var(--text-color);
             margin: 0;
@@ -134,27 +99,29 @@ flex-direction: column-reverse; /* Oyuncu 2'yi üste, Oyuncu 1'i alta al */
 
         /* Dikey modda font boyutunu ayarla */
         body.vertical-mode .timer-display {
-            font-size: 20vh; /* Ekran yüksekliğine göre boyut, küçülmeyi engeller */
+            font-size: 20vh;
         }
 
+        /* Kontrol düğmeleri için yeni konumlandırma */
         .controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 20px; /* Düğmeler arasındaki boşluk ayarlandı */
+            gap: 20px;
+            padding: 20px;
+            z-index: 10; /* Diğer öğelerin üzerinde kalmasını sağlar */
+            width: 100%;
+            /* Mobil cihazların güvenli alanını dikkate al */
+            padding-bottom: 20px;
         }
 
         .control-button {
             background-color: var(--button-color);
             border: none;
             color: var(--text-color);
-            font-size: 2rem; /* Font boyutu biraz küçültüldü */
-            width: 60px; /* Düğme boyutu biraz küçültüldü */
-            height: 60px; /* Düğme boyutu biraz küçültüldü */
+            font-size: 2rem;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             cursor: pointer;
             transition: background-color 0.3s, transform 0.1s;
@@ -269,19 +236,13 @@ flex-direction: column-reverse; /* Oyuncu 2'yi üste, Oyuncu 1'i alta al */
         .settings-modal .modal-button.close:hover { background-color: #da190b; }
 
         /* Font Awesome ikonları için */
-        .fas { font-family: "Font Awesome 5 Free"; font-weight: 900; }
-        .fa-play::before { content: "\f04b"; }
-        .fa-pause::before { content: "\f04c"; }
-        .fa-redo-alt::before { content: "\f2f9"; }
-        .fa-cog::before { content: "\f013"; }
-        .fa-stop::before { content: "\f04d"; }
-        .fa-sync-alt::before { content: "\f2f1"; } /* Döndürme ikonu */
+        .fas { font-family: "Font Awesome 6 Free"; font-weight: 900; }
     </style>
 </head>
 <body>
 
-    <!-- Ana saat ekranı -->
-    <div class="container" id="mainContainer">
+    <!-- Ana zamanlayıcı konteyneri -->
+    <div class="main-container" id="mainContainer">
         <!-- Oyuncu 1 Ekranı -->
         <div id="player1" class="player-timer player1 paused active">
             <h1 id="timer1" class="timer-display">10:00</h1>
@@ -294,15 +255,13 @@ flex-direction: column-reverse; /* Oyuncu 2'yi üste, Oyuncu 1'i alta al */
 
     <!-- Kontrol düğmeleri -->
     <div class="controls">
-        <button id="settingsButton" class="control-button">
+        <button id="settingsButton" class="control-button" aria-label="Ayarlar">
             <i class="fas fa-cog"></i>
         </button>
-        <!-- Ekran döndürme butonu -->
-        <button id="rotateButton" class="control-button">
+        <button id="rotateButton" class="control-button" aria-label="Yönlendirmeyi Değiştir">
             <i class="fas fa-sync-alt"></i>
         </button>
-        <!-- Yeni sıfırlama butonu -->
-        <button id="resetButton" class="control-button">
+        <button id="resetButton" class="control-button" aria-label="Sıfırla">
             <i class="fas fa-redo-alt"></i>
         </button>
     </div>
@@ -330,7 +289,6 @@ flex-direction: column-reverse; /* Oyuncu 2'yi üste, Oyuncu 1'i alta al */
                 <label for="color2">Oyuncu 2 Rengi</label>
                 <input type="color" id="color2" value="#424242">
             </div>
-            <!-- PWA yükleme butonu için form grubu -->
             <div class="form-group">
                 <button id="installPwaButton" class="modal-button save" style="width: 100%; display: none;">Ana Ekrana Ekle</button>
                 <p id="installStatus" style="text-align: center; font-size: 0.9em; margin-top: 10px;"></p>
@@ -343,12 +301,6 @@ flex-direction: column-reverse; /* Oyuncu 2'yi üste, Oyuncu 1'i alta al */
     </div>
 
     <script>
-        // Font Awesome ikonları için
-        const fontAwesomeScript = document.createElement('script');
-        fontAwesomeScript.src = 'https://kit.fontawesome.com/a076d05399.js';
-        fontAwesomeScript.crossOrigin = 'anonymous';
-        document.head.appendChild(fontAwesomeScript);
-        
         // Gerekli DOM elemanlarını seçme
         const player1TimerEl = document.getElementById('timer1');
         const player2TimerEl = document.getElementById('timer2');
@@ -357,7 +309,7 @@ flex-direction: column-reverse; /* Oyuncu 2'yi üste, Oyuncu 1'i alta al */
         const mainContainer = document.getElementById('mainContainer');
         const settingsButton = document.getElementById('settingsButton');
         const rotateButton = document.getElementById('rotateButton');
-        const resetButton = document.getElementById('resetButton'); // Yeni sıfırlama butonu
+        const resetButton = document.getElementById('resetButton');
         const settingsModal = document.getElementById('settingsModal');
         const initialTimeInput = document.getElementById('initialTime');
         const orientationSelect = document.getElementById('orientationSelect');
@@ -381,36 +333,22 @@ flex-direction: column-reverse; /* Oyuncu 2'yi üste, Oyuncu 1'i alta al */
         let deferredPrompt;
 
         // Ses efektleri için Tone.js ayarları
-        // Kulağa daha hoş gelen, basit ve temiz bir "tık" sesi için Synth kullanıldı.
-        const synth = new Tone.Synth({
-            oscillator: { type: "triangle" },
+        const woodSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.05,
+            octaves: 2,
+            oscillator: { type: 'sine' },
             envelope: {
-                attack: 0.005,
-                decay: 0.1,
+                attack: 0.001,
+                decay: 0.4,
                 sustain: 0.01,
-                release: 0.1
+                release: 0.2
             }
         }).toDestination();
 
         // Ses çalma fonksiyonu
-const woodSynth = new Tone.MembraneSynth({
-    pitchDecay: 0.05, // Sesin hızla alçalmasını sağlar
-    octaves: 2,       // Daha geniş bir oktav aralığı
-    oscillator: {
-        type: 'sine'  // Temiz bir sinüs dalgası kullanarak sesin yumuşak olmasını sağlar
-    },
-    envelope: {
-        attack: 0.001, // Çok kısa başlangıç
-        decay: 0.4,    // Hızlı sönümleme
-        sustain: 0.01, // Tutma süresi neredeyse sıfır
-        release: 0.2   // Hızlı bitiş
-    }
-}).toDestination();
-
-// Ses çalma fonksiyonu
-function playSound() {
-    woodSynth.triggerAttackRelease("C2", "8n");
-}
+        function playSound() {
+            woodSynth.triggerAttackRelease("C2", "8n");
+        }
 
         // Zamanı MM:SS formatına dönüştürme fonksiyonu
         function formatTime(seconds) {
@@ -521,7 +459,7 @@ function playSound() {
         // Olay dinleyicileri
         settingsButton.addEventListener('click', () => toggleSettingsModal(true));
         rotateButton.addEventListener('click', toggleOrientation);
-        resetButton.addEventListener('click', resetTimer); // Yeni sıfırlama butonu için olay dinleyici
+        resetButton.addEventListener('click', resetTimer);
 
         player1Container.addEventListener('click', () => {
             if ((isPaused && currentPlayer === 1) || (!isPaused && currentPlayer === 1)) {
@@ -566,7 +504,6 @@ function playSound() {
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            // PWA kurulum butonu ve durum mesajını göster
             installPwaButton.style.display = 'block';
             installStatus.textContent = 'Uygulamayı ana ekranınıza eklemek için tıklayın.';
         });
@@ -616,7 +553,7 @@ function playSound() {
         link.rel = 'manifest';
         link.href = manifestUrl;
         document.head.appendChild(link);
-
     </script>
 </body>
 </html>
+
