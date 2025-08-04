@@ -72,7 +72,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.3s ease, transform 0.5s ease;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease; /* Transform yerine box-shadow animasyonu ekledim */
             cursor: pointer;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             -webkit-tap-highlight-color: transparent;
@@ -80,12 +80,16 @@
             border-radius: var(--border-radius-main);
         }
 
+        /* Zamanlayıcılar için hover ve active durumlarına daha küçük, stabil bir gölge efekti ekledim */
+        .player-timer:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* Hafif gölge artışı */
+        }
+
         .player1 { background-color: var(--player1-color); }
         .player2 { background-color: var(--player2-color); }
 
         .player-timer.active {
-            transform: scale(1.02);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4); /* Aktifken daha belirgin bir gölge */
         }
         
         .player-timer.paused {
@@ -102,13 +106,13 @@
 
         /* Dikey modda font boyutunu daha da küçültme */
         body.vertical-mode .timer-display {
-            font-size: 12vh;
+            font-size: 10vh; /* Daha küçük bir değer */
         }
 
         /* Küçük ekranlar için dikey mod font boyutunu daha da küçültme */
         @media (max-height: 600px) {
             body.vertical-mode .timer-display {
-                font-size: 10vh;
+                font-size: 7vh; /* Önceki değerden daha küçük */
             }
         }
         
