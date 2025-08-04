@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Satranç Saati</title>
     <!-- Sekme ikonunu (favicon) ekleme -->
-    <!-- Not: 'Adsız tasarım (1).png' dosyası burada olmadığı için, bu satır sadece referans amaçlıdır. -->
-    <link rel="icon" href="Adsız tasarım (1).png" type="image/png">
+    <!-- Varsayılan bir placeholder kullanıyoruz. -->
+    <link rel="icon" href="https://placehold.co/32x32/111/fff?text=CC" type="image/png">
     <!-- Font Awesome ikonları için -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <!-- Tone.js kütüphanesi ses efektleri için -->
@@ -30,7 +30,6 @@
             --button-hover-color: #757575;
             --border-radius-main: 15px;
             --border-radius-modal: 15px;
-            --control-height: 100px; /* Kontrol panelinin tahmini yüksekliği */
         }
 
         body {
@@ -46,9 +45,6 @@
             height: 100vh;
             user-select: none;
             box-sizing: border-box; /* Padding ve border'ı genişliğe dahil et */
-            /* Kontrol düğmelerinin sabitlenmesi için altta boşluk bırak */
-            padding-bottom: var(--control-height);
-            transition: padding-bottom 0.3s ease; /* Padding animasyonu için geçiş */
         }
 
         /* Ana zamanlayıcı konteyneri için Flexbox düzeni */
@@ -73,7 +69,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            transition: background-color 0.3s ease, transform 0.5s ease;
             cursor: pointer;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             -webkit-tap-highlight-color: transparent;
@@ -81,16 +77,12 @@
             border-radius: var(--border-radius-main);
         }
 
-        /* Zamanlayıcılar için hover ve active durumlarına daha küçük, stabil bir gölge efekti ekledim */
-        .player-timer:hover {
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* Hafif gölge artışı */
-        }
-
         .player1 { background-color: var(--player1-color); }
         .player2 { background-color: var(--player2-color); }
 
         .player-timer.active {
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4); /* Aktifken daha belirgin bir gölge */
+            transform: scale(1.02);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
         }
         
         .player-timer.paused {
@@ -105,75 +97,31 @@
             transition: font-size 0.5s ease;
         }
 
-        /* Dikey modda font boyutunu daha da küçültme */
+        /* Dikey modda font boyutunu ayarla */
         body.vertical-mode .timer-display {
-            font-size: 10vh; /* Daha küçük bir değer */
+            /* Dikey modda font boyutunu küçültüldü */
+            font-size: 15vh;
         }
 
         /* Küçük ekranlar için dikey mod font boyutunu daha da küçültme */
         @media (max-height: 600px) {
             body.vertical-mode .timer-display {
-                font-size: 7vh; /* Önceki değerden daha küçük */
-            }
-        }
-        
-        /* Yatay ve dar ekranlar için font boyutunu küçültme */
-        @media (max-width: 600px) and (orientation: landscape) {
-            .timer-display {
-                font-size: 15vw;
+                font-size: 12vh;
             }
         }
 
         /* Kontrol düğmeleri için yeni konumlandırma */
         .controls {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 20px;
             padding: 20px;
-            z-index: 10;
+            z-index: 10; /* Diğer öğelerin üzerinde kalmasını sağlar */
             width: 100%;
-            background-color: var(--bg-color); /* Butonların arkasının görünmesini engellemek için */
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.2); /* Üste gölge ekle */
-            box-sizing: border-box;
-            height: var(--control-height);
-            transition: transform 0.3s ease; /* Animasyon için geçiş */
+            /* Mobil cihazların güvenli alanını dikkate al */
+            padding-bottom: 20px;
         }
-
-        /* Kontrol panelini gizlemek için yeni sınıf */
-        .controls.hidden {
-            transform: translateY(100%);
-        }
-
-        /* Kontrol düğmelerini gizleme-gösterme düğmesi için yeni stil */
-        .toggle-button {
-            position: fixed;
-            bottom: 20px; /* Kontrol paneli ile aynı hizada, alttan boşluk */
-            right: 20px; /* Sağ alt köşeye konumlandırma */
-            z-index: 20;
-            background-color: var(--button-color);
-            border: none;
-            color: var(--text-color);
-            font-size: 1.5rem;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.3s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        /* Kontrol düğmelerini gizle/göster butonu için hover */
-        .toggle-button:hover { background-color: var(--button-hover-color); }
-        .toggle-button:active { transform: scale(0.95); }
 
         .control-button {
             background-color: var(--button-color);
@@ -314,7 +262,7 @@
     </div>
 
     <!-- Kontrol düğmeleri -->
-    <div class="controls" id="controls">
+    <div class="controls">
         <button id="settingsButton" class="control-button" aria-label="Ayarlar">
             <i class="fas fa-cog"></i>
         </button>
@@ -326,33 +274,43 @@
         </button>
     </div>
 
-    <!-- Kontrol düğmelerini gizle/göster butonu -->
-    <button id="toggleControlsButton" class="toggle-button" aria-label="Kontrolleri Gizle/Göster">
-        <i class="fas fa-eye-slash"></i>
-    </button>
-
     <!-- Ayarlar modalı -->
     <div id="settingsModal" class="modal-overlay">
         <div class="settings-modal">
-            <h2>Ayarlar</h2>
+            <h2 id="settingsTitle">Ayarlar</h2>
             <div class="form-group">
-                <label for="initialTime">Başlangıç Süresi (dakika)</label>
-                <input type="number" id="initialTime" value="10" min="1">
+                <label id="initialTimeLabel" for="initialTime">Başlangıç Süresi (dakika)</label>
+                <input type="number" id="initialTimeInput" value="10" min="1">
             </div>
             <div class="form-group">
-                <label for="orientationSelect">Yönlendirme</label>
+                <label id="languageLabel" for="languageSelect">Dil</label>
+                <select id="languageSelect">
+                    <option value="en">English</option>
+                    <option value="tr" selected>Türkçe</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                    <option value="it">Italiano</option>
+                    <option value="ru">Русский</option>
+                    <option value="ja">日本語</option>
+                    <option value="ko">한국어</option>
+                    <option value="zh">中文</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label id="orientationLabel" for="orientationSelect">Yönlendirme</label>
                 <select id="orientationSelect">
                     <option value="horizontal">Yatay</option>
                     <option value="vertical">Dikey</option>
                 </select>
             </div>
             <div class="form-group">
-                <label for="color1">Oyuncu 1 Rengi</label>
-                <input type="color" id="color1" value="#4CAF50">
+                <label id="color1Label" for="color1">Oyuncu 1 Rengi</label>
+                <input type="color" id="color1Input" value="#4CAF50">
             </div>
             <div class="form-group">
-                <label for="color2">Oyuncu 2 Rengi</label>
-                <input type="color" id="color2" value="#424242">
+                <label id="color2Label" for="color2">Oyuncu 2 Rengi</label>
+                <input type="color" id="color2Input" value="#424242">
             </div>
             <div class="form-group">
                 <button id="installPwaButton" class="modal-button save" style="width: 100%; display: none;">Ana Ekrana Ekle</button>
@@ -371,21 +329,27 @@
         const player2TimerEl = document.getElementById('timer2');
         const player1Container = document.getElementById('player1');
         const player2Container = document.getElementById('player2');
-        const controls = document.getElementById('controls');
+        const mainContainer = document.getElementById('mainContainer');
         const settingsButton = document.getElementById('settingsButton');
         const rotateButton = document.getElementById('rotateButton');
         const resetButton = document.getElementById('resetButton');
-        const toggleControlsButton = document.getElementById('toggleControlsButton');
         const settingsModal = document.getElementById('settingsModal');
-        const initialTimeInput = document.getElementById('initialTime');
+        const initialTimeInput = document.getElementById('initialTimeInput');
         const orientationSelect = document.getElementById('orientationSelect');
-        const color1Input = document.getElementById('color1');
-        const color2Input = document.getElementById('color2');
+        const color1Input = document.getElementById('color1Input');
+        const color2Input = document.getElementById('color2Input');
         const saveSettingsButton = document.getElementById('saveSettings');
         const cancelSettingsButton = document.getElementById('cancelSettings');
         const installPwaButton = document.getElementById('installPwaButton');
         const installStatus = document.getElementById('installStatus');
         const body = document.body;
+        const languageSelect = document.getElementById('languageSelect');
+        const settingsTitle = document.getElementById('settingsTitle');
+        const initialTimeLabel = document.getElementById('initialTimeLabel');
+        const languageLabel = document.getElementById('languageLabel');
+        const orientationLabel = document.getElementById('orientationLabel');
+        const color1Label = document.getElementById('color1Label');
+        const color2Label = document.getElementById('color2Label');
 
         // Oyun durumu ve zamanlayıcı değişkenleri
         let initialTime = 600; // Saniye cinsinden (10 dakika)
@@ -394,10 +358,272 @@
         let activeTimer;
         let isPaused = true;
         let currentPlayer = 1;
+        let currentLanguage = 'tr';
 
         // PWA kurulumu için değişken
         let deferredPrompt;
-        let controlsHidden = false;
+
+        // Dil çevirileri için bir nesne
+        const translations = {
+            en: {
+                title: 'Chess Clock',
+                settingsButton: 'Settings',
+                rotateButton: 'Change Orientation',
+                resetButton: 'Reset',
+                settingsTitle: 'Settings',
+                initialTimeLabel: 'Initial Time (minutes)',
+                languageLabel: 'Language',
+                orientationLabel: 'Orientation',
+                horizontal: 'Horizontal',
+                vertical: 'Vertical',
+                color1Label: 'Player 1 Color',
+                color2Label: 'Player 2 Color',
+                installPwaButton: 'Add to Home Screen',
+                installStatus: {
+                    prompt: 'Click to add the app to your home screen.',
+                    accepted: 'App successfully added!',
+                    cancelled: 'App installation cancelled.',
+                    unsupported: 'Your browser does not support this feature or the app is already installed.'
+                },
+                saveButton: 'Save',
+                cancelButton: 'Close'
+            },
+            tr: {
+                title: 'Satranç Saati',
+                settingsButton: 'Ayarlar',
+                rotateButton: 'Yönlendirmeyi Değiştir',
+                resetButton: 'Sıfırla',
+                settingsTitle: 'Ayarlar',
+                initialTimeLabel: 'Başlangıç Süresi (dakika)',
+                languageLabel: 'Dil',
+                orientationLabel: 'Yönlendirme',
+                horizontal: 'Yatay',
+                vertical: 'Dikey',
+                color1Label: 'Oyuncu 1 Rengi',
+                color2Label: 'Oyuncu 2 Rengi',
+                installPwaButton: 'Ana Ekrana Ekle',
+                installStatus: {
+                    prompt: 'Uygulamayı ana ekranınıza eklemek için tıklayın.',
+                    accepted: 'Uygulama başarıyla eklendi!',
+                    cancelled: 'Uygulama ekleme işlemi iptal edildi.',
+                    unsupported: 'Tarayıcınız bu özelliği desteklemiyor veya uygulama zaten yüklü.'
+                },
+                saveButton: 'Kaydet',
+                cancelButton: 'Kapat'
+            },
+            es: {
+                title: 'Reloj de Ajedrez',
+                settingsButton: 'Ajustes',
+                rotateButton: 'Cambiar Orientación',
+                resetButton: 'Reiniciar',
+                settingsTitle: 'Ajustes',
+                initialTimeLabel: 'Tiempo Inicial (minutos)',
+                languageLabel: 'Idioma',
+                orientationLabel: 'Orientación',
+                horizontal: 'Horizontal',
+                vertical: 'Vertical',
+                color1Label: 'Color Jugador 1',
+                color2Label: 'Color Jugador 2',
+                installPwaButton: 'Añadir a Pantalla de Inicio',
+                installStatus: {
+                    prompt: 'Haz clic para añadir la aplicación a tu pantalla de inicio.',
+                    accepted: '¡Aplicación añadida con éxito!',
+                    cancelled: 'Instalación de la aplicación cancelada.',
+                    unsupported: 'Tu navegador no soporta esta función o la aplicación ya está instalada.'
+                },
+                saveButton: 'Guardar',
+                cancelButton: 'Cerrar'
+            },
+            fr: {
+                title: 'Pendule d\'échecs',
+                settingsButton: 'Paramètres',
+                rotateButton: 'Changer d\'orientation',
+                resetButton: 'Réinitialiser',
+                settingsTitle: 'Paramètres',
+                initialTimeLabel: 'Temps Initial (minutes)',
+                languageLabel: 'Langue',
+                orientationLabel: 'Orientation',
+                horizontal: 'Horizontal',
+                vertical: 'Vertical',
+                color1Label: 'Couleur du joueur 1',
+                color2Label: 'Couleur du joueur 2',
+                installPwaButton: 'Ajouter à l\'écran d\'accueil',
+                installStatus: {
+                    prompt: 'Cliquez pour ajouter l\'application à votre écran d\'accueil.',
+                    accepted: 'Application ajoutée avec succès !',
+                    cancelled: 'Installation de l\'application annulée.',
+                    unsupported: 'Votre navigateur ne supporte pas cette fonctionnalité ou l\'application est déjà installée.'
+                },
+                saveButton: 'Sauvegarder',
+                cancelButton: 'Fermer'
+            },
+            de: {
+                title: 'Schachuhr',
+                settingsButton: 'Einstellungen',
+                rotateButton: 'Orientierung ändern',
+                resetButton: 'Zurücksetzen',
+                settingsTitle: 'Einstellungen',
+                initialTimeLabel: 'Startzeit (Minuten)',
+                languageLabel: 'Sprache',
+                orientationLabel: 'Ausrichtung',
+                horizontal: 'Horizontal',
+                vertical: 'Vertikal',
+                color1Label: 'Spieler 1 Farbe',
+                color2Label: 'Spieler 2 Farbe',
+                installPwaButton: 'Zum Startbildschirm hinzufügen',
+                installStatus: {
+                    prompt: 'Klicken Sie hier, um die App zu Ihrem Startbildschirm hinzuzufügen.',
+                    accepted: 'App erfolgreich hinzugefügt!',
+                    cancelled: 'App-Installation abgebrochen.',
+                    unsupported: 'Ihr Browser unterstützt diese Funktion nicht oder die App ist bereits installiert.'
+                },
+                saveButton: 'Speichern',
+                cancelButton: 'Schließen'
+            },
+            it: {
+                title: 'Orologio Scacchi',
+                settingsButton: 'Impostazioni',
+                rotateButton: 'Cambia Orientamento',
+                resetButton: 'Ripristina',
+                settingsTitle: 'Impostazioni',
+                initialTimeLabel: 'Tempo Iniziale (minuti)',
+                languageLabel: 'Lingua',
+                orientationLabel: 'Orientamento',
+                horizontal: 'Orizzontale',
+                vertical: 'Verticale',
+                color1Label: 'Colore Giocatore 1',
+                color2Label: 'Colore Giocatore 2',
+                installPwaButton: 'Aggiungi a schermata Home',
+                installStatus: {
+                    prompt: 'Clicca per aggiungere l\'app alla tua schermata home.',
+                    accepted: 'App aggiunta con successo!',
+                    cancelled: 'Installazione dell\'app annullata.',
+                    unsupported: 'Il tuo browser non supporta questa funzionalità o l\'app è già installata.'
+                },
+                saveButton: 'Salva',
+                cancelButton: 'Chiudi'
+            },
+            ru: {
+                title: 'Шахматные часы',
+                settingsButton: 'Настройки',
+                rotateButton: 'Сменить ориентацию',
+                resetButton: 'Сброс',
+                settingsTitle: 'Настройки',
+                initialTimeLabel: 'Начальное время (минуты)',
+                languageLabel: 'Язык',
+                orientationLabel: 'Ориентация',
+                horizontal: 'Горизонтальная',
+                vertical: 'Вертикальная',
+                color1Label: 'Цвет игрока 1',
+                color2Label: 'Цвет игрока 2',
+                installPwaButton: 'Добавить на главный экран',
+                installStatus: {
+                    prompt: 'Нажмите, чтобы добавить приложение на главный экран.',
+                    accepted: 'Приложение успешно добавлено!',
+                    cancelled: 'Установка приложения отменена.',
+                    unsupported: 'Ваш браузер не поддерживает эту функцию или приложение уже установлено.'
+                },
+                saveButton: 'Сохранить',
+                cancelButton: 'Закрыть'
+            },
+            ja: {
+                title: 'チェスクロック',
+                settingsButton: '設定',
+                rotateButton: '向きを変更',
+                resetButton: 'リセット',
+                settingsTitle: '設定',
+                initialTimeLabel: '初期時間 (分)',
+                languageLabel: '言語',
+                orientationLabel: '向き',
+                horizontal: '横向き',
+                vertical: '縦向き',
+                color1Label: 'プレイヤー1の色',
+                color2Label: 'プレイヤー2の色',
+                installPwaButton: 'ホーム画面に追加',
+                installStatus: {
+                    prompt: 'アプリをホーム画面に追加するにはクリックしてください。',
+                    accepted: 'アプリが正常に追加されました！',
+                    cancelled: 'アプリのインストールがキャンセルされました。',
+                    unsupported: 'お使いのブラウザはこの機能をサポートしていないか、アプリがすでにインストールされています。'
+                },
+                saveButton: '保存',
+                cancelButton: '閉じる'
+            },
+            ko: {
+                title: '체스 시계',
+                settingsButton: '설정',
+                rotateButton: '방향 변경',
+                resetButton: '재설정',
+                settingsTitle: '설정',
+                initialTimeLabel: '초기 시간 (분)',
+                languageLabel: '언어',
+                orientationLabel: '방향',
+                horizontal: '가로',
+                vertical: '세로',
+                color1Label: '플레이어 1 색상',
+                color2Label: '플레이어 2 색상',
+                installPwaButton: '홈 화면에 추가',
+                installStatus: {
+                    prompt: '홈 화면에 앱을 추가하려면 클릭하세요.',
+                    accepted: '앱이 성공적으로 추가되었습니다!',
+                    cancelled: '앱 설치가 취소되었습니다.',
+                    unsupported: '브라우저가 이 기능을 지원하지 않거나 앱이 이미 설치되어 있습니다.'
+                },
+                saveButton: '저장',
+                cancelButton: '닫기'
+            },
+            zh: {
+                title: '国际象棋计时器',
+                settingsButton: '设置',
+                rotateButton: '改变方向',
+                resetButton: '重置',
+                settingsTitle: '设置',
+                initialTimeLabel: '初始时间 (分钟)',
+                languageLabel: '语言',
+                orientationLabel: '方向',
+                horizontal: '水平',
+                vertical: '垂直',
+                color1Label: '玩家1颜色',
+                color2Label: '玩家2颜色',
+                installPwaButton: '添加到主屏幕',
+                installStatus: {
+                    prompt: '点击将应用添加到主屏幕。',
+                    accepted: '应用已成功添加！',
+                    cancelled: '应用安装已取消。',
+                    unsupported: '您的浏览器不支持此功能，或者应用已安装。'
+                },
+                saveButton: '保存',
+                cancelButton: '关闭'
+            }
+        };
+
+        // Dil ayarını güncelleyen fonksiyon
+        function setLanguage(lang) {
+            const t = translations[lang];
+            if (!t) return;
+
+            document.title = t.title;
+            settingsButton.setAttribute('aria-label', t.settingsButton);
+            rotateButton.setAttribute('aria-label', t.rotateButton);
+            resetButton.setAttribute('aria-label', t.resetButton);
+            settingsTitle.textContent = t.settingsTitle;
+            initialTimeLabel.textContent = t.initialTimeLabel;
+            languageLabel.textContent = t.languageLabel;
+            orientationLabel.textContent = t.orientationLabel;
+            document.querySelector('#orientationSelect option[value="horizontal"]').textContent = t.horizontal;
+            document.querySelector('#orientationSelect option[value="vertical"]').textContent = t.vertical;
+            color1Label.textContent = t.color1Label;
+            color2Label.textContent = t.color2Label;
+            saveSettingsButton.textContent = t.saveButton;
+            cancelSettingsButton.textContent = t.cancelButton;
+            installPwaButton.textContent = t.installPwaButton;
+            if (deferredPrompt) {
+                installStatus.textContent = t.installStatus.prompt;
+            }
+            // Mevcut dil ayarını güncelle
+            currentLanguage = lang;
+            languageSelect.value = lang;
+        }
 
         // Ses efektleri için Tone.js ayarları
         const woodSynth = new Tone.MembraneSynth({
@@ -411,10 +637,27 @@
                 release: 0.2
             }
         }).toDestination();
+        
+        // Oyun bittiğinde çalacak 3 saniyelik ses efekti için ayarlar
+        const gameOverSynth = new Tone.Synth({
+            oscillator: { type: 'sine' },
+            envelope: {
+                attack: 0.5,
+                decay: 1.0,
+                sustain: 1.0,
+                release: 1.5
+            }
+        }).toDestination();
 
         // Ses çalma fonksiyonu
         function playSound() {
             woodSynth.triggerAttackRelease("C2", "8n");
+        }
+
+        // Oyun bitti sesi çalma fonksiyonu
+        function playGameOverSound() {
+            // 3 saniyelik bir ses efekti çal
+            gameOverSynth.triggerAttackRelease("A3", "3s");
         }
 
         // Zamanı MM:SS formatına dönüştürme fonksiyonu
@@ -431,6 +674,14 @@
             player2TimerEl.textContent = formatTime(timer2);
         }
 
+        // Mobil cihazlarda titreşim sağlayan fonksiyon
+        function vibratePhone() {
+            if (window.navigator && window.navigator.vibrate) {
+                // 200 ms titreşim
+                window.navigator.vibrate(200); 
+            }
+        }
+
         // Oyuncu değiştirme ve zamanlayıcıyı başlatma/durdurma
         function togglePlayer() {
             if (isPaused) {
@@ -440,6 +691,8 @@
             } else {
                 clearInterval(activeTimer);
                 currentPlayer = currentPlayer === 1 ? 2 : 1;
+                // Oyuncu değiştiğinde titreşimi tetikle
+                vibratePhone();
             }
 
             if (currentPlayer === 1) {
@@ -458,6 +711,8 @@
                         timer1 = 0;
                         player1Container.classList.remove('active');
                         pauseTimer();
+                        // Oyun bittiğinde 3 saniyelik sesi çal
+                        playGameOverSound();
                     }
                 } else {
                     timer2--;
@@ -466,6 +721,8 @@
                         timer2 = 0;
                         player2Container.classList.remove('active');
                         pauseTimer();
+                        // Oyun bittiğinde 3 saniyelik sesi çal
+                        playGameOverSound();
                     }
                 }
                 updateTimers();
@@ -475,7 +732,6 @@
         // Zamanlayıcıyı duraklatma
         function pauseTimer() {
             if (isPaused) return;
-
             isPaused = true;
             clearInterval(activeTimer);
             player1Container.classList.add('paused');
@@ -517,27 +773,17 @@
                 orientationSelect.value = body.classList.contains('vertical-mode') ? 'vertical' : 'horizontal';
                 color1Input.value = getComputedStyle(document.documentElement).getPropertyValue('--player1-color').trim();
                 color2Input.value = getComputedStyle(document.documentElement).getPropertyValue('--player2-color').trim();
+                languageSelect.value = currentLanguage;
                 settingsModal.classList.add('show');
             } else {
                 settingsModal.classList.remove('show');
             }
         }
         
-        // Kontrol düğmelerini gizleme/gösterme
-        function toggleControls() {
-            controlsHidden = !controlsHidden;
-            controls.classList.toggle('hidden', controlsHidden);
-            body.style.paddingBottom = controlsHidden ? '0' : 'var(--control-height)';
-            const icon = toggleControlsButton.querySelector('i');
-            icon.classList.toggle('fa-eye', controlsHidden);
-            icon.classList.toggle('fa-eye-slash', !controlsHidden);
-        }
-
         // Olay dinleyicileri
         settingsButton.addEventListener('click', () => toggleSettingsModal(true));
         rotateButton.addEventListener('click', toggleOrientation);
         resetButton.addEventListener('click', resetTimer);
-        toggleControlsButton.addEventListener('click', toggleControls);
 
         player1Container.addEventListener('click', () => {
             if ((isPaused && currentPlayer === 1) || (!isPaused && currentPlayer === 1)) {
@@ -563,6 +809,9 @@
             const selectedOrientation = orientationSelect.value;
             applyOrientation(selectedOrientation);
 
+            const selectedLanguage = languageSelect.value;
+            setLanguage(selectedLanguage);
+
             document.documentElement.style.setProperty('--player1-color', color1Input.value);
             document.documentElement.style.setProperty('--player2-color', color2Input.value);
 
@@ -574,10 +823,8 @@
         });
         
         window.onload = function() {
-            // Başlangıçta dikey modda başlat
-            applyOrientation('vertical');
-            // Ayarlar modalındaki seçeneği de dikey olarak ayarla
-            orientationSelect.value = 'vertical';
+            setLanguage(currentLanguage);
+            applyOrientation('horizontal');
             updateTimers();
         };
 
@@ -586,7 +833,7 @@
             e.preventDefault();
             deferredPrompt = e;
             installPwaButton.style.display = 'block';
-            installStatus.textContent = 'Uygulamayı ana ekranınıza eklemek için tıklayın.';
+            installStatus.textContent = translations[currentLanguage].installStatus.prompt;
         });
 
         installPwaButton.addEventListener('click', async () => {
@@ -594,14 +841,14 @@
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
                 if (outcome === 'accepted') {
-                    installStatus.textContent = 'Uygulama başarıyla eklendi!';
+                    installStatus.textContent = translations[currentLanguage].installStatus.accepted;
                 } else {
-                    installStatus.textContent = 'Uygulama ekleme işlemi iptal edildi.';
+                    installStatus.textContent = translations[currentLanguage].installStatus.cancelled;
                 }
                 deferredPrompt = null;
                 installPwaButton.style.display = 'none';
             } else {
-                installStatus.textContent = 'Tarayıcınız bu özelliği desteklemiyor veya uygulama zaten yüklü.';
+                installStatus.textContent = translations[currentLanguage].installStatus.unsupported;
             }
         });
         
@@ -616,12 +863,12 @@
             theme_color: "#212121",
             icons: [
                 {
-                    src: "Adsız tasarım (1).png",
+                    src: "https://placehold.co/192x192/111/fff?text=CC",
                     sizes: "192x192",
                     type: "image/png"
                 },
                 {
-                    src: "Adsız tasarım (1).png",
+                    src: "https://placehold.co/512x512/111/fff?text=CC",
                     sizes: "512x512",
                     type: "image/png"
                 }
